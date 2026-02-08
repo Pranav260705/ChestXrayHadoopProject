@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Batch Processing - Chest X-Ray AI</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --secondary: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --dark: #1f2937;
+            --gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(90deg, #667eea, #764ba2, #f093fb);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1.1rem;
+        }
+
+        .nav-links {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            color: #fff;
+            background: rgba(102, 126, 234, 0.3);
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .card-title::before {
+            content: '';
+            width: 4px;
+            height: 24px;
+            background: var(--gradient);
+            border-radius: 2px;
+        }
+
+        /* Patient Row */
+        .patient-row {
+            display: grid;
+            grid-template-columns: 1.5fr 0.8fr 0.8fr 0.8fr 1.5fr auto;
+            gap: 1rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            margin-bottom: 0.75rem;
+            align-items: center;
+        }
+
+        .patient-row-header {
+            display: grid;
+            grid-template-columns: 1.5fr 0.8fr 0.8fr 0.8fr 1.5fr auto;
+            gap: 1rem;
+            padding: 0.5rem 1rem;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            font-size: 0.9rem;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        select option {
+            background: var(--dark);
+        }
+
+        input[type="file"] {
+            padding: 0.5rem;
+            font-size: 0.8rem;
+        }
+
+        input[type="file"]::file-selector-button {
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            border: none;
+            background: var(--gradient);
+            color: #fff;
+            cursor: pointer;
+            margin-right: 0.5rem;
+        }
+
+        .btn-remove {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            border: none;
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--danger);
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.2s;
+        }
+
+        .btn-remove:hover {
+            background: var(--danger);
+            color: #fff;
+        }
+
+        .btn-add {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            background: transparent;
+            color: rgba(255, 255, 255, 0.7);
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 1.5rem;
+        }
+
+        .btn-add:hover {
+            border-color: var(--primary);
+            color: #fff;
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .btn-primary {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 12px;
+            background: var(--gradient);
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Progress */
+        .progress-container {
+            display: none;
+            margin-top: 2rem;
+        }
+
+        .progress-container.show {
+            display: block;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--gradient);
+            border-radius: 4px;
+            transition: width 0.3s;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.7;
+            }
+        }
+
+        .progress-text {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        /* Results */
+        .results-container {
+            display: none;
+            margin-top: 2rem;
+        }
+
+        .results-container.show {
+            display: block;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+        }
+
+        .result-success {
+            color: var(--secondary);
+        }
+
+        .result-error {
+            color: var(--danger);
+        }
+
+        .spark-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(255, 152, 0, 0.2);
+            color: #ff9800;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            margin-bottom: 1rem;
+        }
+
+        .patient-count {
+            text-align: center;
+            padding: 0.5rem;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>🫁 Chest X-Ray AI Diagnosis</h1>
+            <p class="subtitle">Spark Batch Processing</p>
+            <nav class="nav-links">
+                <a href="/" class="nav-link">🔬 New Diagnosis</a>
+                <a href="/batch" class="nav-link active">⚡ Batch Processing</a>
+                <a href="/search" class="nav-link">🔍 Patient History</a>
+            </nav>
+        </header>
+
+        <div class="card">
+            <h2 class="card-title">Batch Upload</h2>
+
+            <div class="spark-badge">
+                ⚡ Powered by Apache Spark - Process multiple patients in parallel
+            </div>
+
+            <form id="batch-form">
+                <div class="patient-row-header">
+                    <span>Patient Name *</span>
+                    <span>Age</span>
+                    <span>Gender</span>
+                    <span>View</span>
+                    <span>X-Ray Image *</span>
+                    <span></span>
+                </div>
+
+                <div id="patients-container">
+                    <!-- Patient rows will be added here -->
+                </div>
+
+                <button type="button" class="btn-add" onclick="addPatientRow()">
+                    <span>➕</span> Add Another Patient
+                </button>
+
+                <div class="patient-count" id="patient-count">0 patients added</div>
+
+                <button type="submit" class="btn-primary" id="submit-btn">
+                    <span>⚡ Process Batch with Spark</span>
+                </button>
+            </form>
+
+            <div class="progress-container" id="progress-container">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+                </div>
+                <p class="progress-text" id="progress-text">Initializing Spark job...</p>
+            </div>
+
+            <div class="results-container" id="results-container">
+                <h3 style="margin-bottom: 1rem;">Processing Results</h3>
+                <div id="results-list"></div>
+                <a href="/search" class="btn-primary" style="margin-top: 1rem; text-decoration: none;">
+                    View All Results in Patient History →
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let patientCount = 0;
+
+        function addPatientRow() {
+            const container = document.getElementById('patients-container');
+            const rowId = 'patient-' + patientCount;
+
+            const row = document.createElement('div');
+            row.className = 'patient-row';
+            row.id = rowId;
+            row.innerHTML = `
+                <input type="text" name="name_${patientCount}" placeholder="John Doe" required>
+                <input type="number" name="age_${patientCount}" value="50" min="0" max="120" required>
+                <select name="gender_${patientCount}" required>
+                    <option value="M">Male</option>
+                    <option value="F">Female</option>
+                </select>
+                <select name="view_${patientCount}" required>
+                    <option value="PA">PA</option>
+                    <option value="AP">AP</option>
+                </select>
+                <input type="file" name="image_${patientCount}" accept="image/png,image/jpeg" required>
+                <button type="button" class="btn-remove" onclick="removePatientRow('${rowId}')">×</button>
+            `;
+
+            container.appendChild(row);
+            patientCount++;
+            updatePatientCount();
+        }
+
+        function removePatientRow(rowId) {
+            const row = document.getElementById(rowId);
+            if (row) {
+                row.remove();
+                updatePatientCount();
+            }
+        }
+
+        function updatePatientCount() {
+            const count = document.querySelectorAll('.patient-row').length;
+            const countText = count === 1 ? '1 patient added' : `${count} patients added`;
+            document.getElementById('patient-count').textContent = countText;
+            document.getElementById('submit-btn').disabled = count === 0;
+        }
+
+        // Add first row on load
+        addPatientRow();
+
+        // Form submission
+        document.getElementById('batch-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const rows = document.querySelectorAll('.patient-row');
+            if (rows.length === 0) {
+                alert('Please add at least one patient');
+                return;
+            }
+
+            const formData = new FormData();
+            let patientIndex = 0;
+
+            rows.forEach((row) => {
+                const inputs = row.querySelectorAll('input, select');
+                const name = inputs[0].value;
+                const age = inputs[1].value;
+                const gender = inputs[2].value;
+                const view = inputs[3].value;
+                const file = inputs[4].files[0];
+
+                if (name && file) {
+                    formData.append(`patient_${patientIndex}`, JSON.stringify({
+                        name: name,
+                        age: parseInt(age),
+                        gender: gender,
+                        view: view
+                    }));
+                    formData.append(`image_${patientIndex}`, file);
+                    patientIndex++;
+                }
+            });
+
+            formData.append('patient_count', patientIndex);
+
+            // Show progress
+            document.getElementById('batch-form').style.display = 'none';
+            document.getElementById('progress-container').classList.add('show');
+
+            const progressFill = document.getElementById('progress-fill');
+            const progressText = document.getElementById('progress-text');
+
+            progressFill.style.width = '10%';
+            progressText.textContent = 'Uploading images...';
+
+            try {
+                const response = await fetch('/batch/process', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                progressFill.style.width = '50%';
+                progressText.textContent = 'Running Spark batch inference...';
+
+                const data = await response.json();
+
+                progressFill.style.width = '100%';
+                progressText.textContent = 'Complete!';
+
+                // Show results
+                setTimeout(() => {
+                    document.getElementById('progress-container').classList.remove('show');
+                    document.getElementById('results-container').classList.add('show');
+
+                    const resultsList = document.getElementById('results-list');
+                    resultsList.innerHTML = '';
+
+                    if (data.results) {
+                        data.results.forEach(result => {
+                            const statusClass = result.success ? 'result-success' : 'result-error';
+                            const statusIcon = result.success ? '✓' : '✗';
+                            resultsList.innerHTML += `
+                                <div class="result-item">
+                                    <span>${result.patient_name}</span>
+                                    <span class="${statusClass}">${statusIcon} ${result.message || 'Processed'}</span>
+                                </div>
+                            `;
+                        });
+                    }
+                }, 500);
+
+            } catch (error) {
+                progressText.textContent = 'Error: ' + error.message;
+                progressFill.style.background = 'var(--danger)';
+            }
+        });
+    </script>
+</body>
+
+</html>

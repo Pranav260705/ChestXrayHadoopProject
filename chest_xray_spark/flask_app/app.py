@@ -59,6 +59,7 @@ from chest_xray_spark.hdfs_utils import (
     get_patient_data,
     read_bytes_from_hdfs
 )
+from chest_xray_spark.batch_processor import run_spark_batch
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -303,6 +304,53 @@ def serve_image(folder_name, filename):
     except Exception as e:
         logger.error(f"Error serving image: {e}")
         return 'Error loading image', 500
+
+
+@app.route('/batch')
+def batch_page():
+    """Render the batch processing page."""
+    return render_template('batch.html')
+
+
+@app.route('/batch/process', methods=['POST'])
+def batch_process():
+    """Handle batch upload and process with Spark."""
+    import json
+    
+    try:
+        patient_count = int(request.form.get('patient_count', 0))
+        
+        if patient_count == 0:
+            return jsonify({'error': 'No patients provided'}), 400
+        
+        # Collect patient data
+        patients = []
+        for i in range(patient_count):
+            patient_json = request.form.get(f'patient_{i}')
+            image_file = request.files.get(f'image_{i}')
+            
+            if patient_json and image_file:
+                patient_data = json.loads(patient_json)
+                patient_data['image_bytes'] = image_file.read()
+                patients.append(patient_data)
+        
+        if not patients:
+            return jsonify({'error': 'No valid patients found'}), 400
+        
+        logger.info(f"Processing batch of {len(patients)} patients with Spark")
+        
+        # Run Spark batch processing
+        results = run_spark_batch(patients)
+        
+        return jsonify({
+            'success': True,
+            'processed': len(results),
+            'results': results
+        })
+        
+    except Exception as e:
+        logger.error(f"Batch processing error: {e}")
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/health')
