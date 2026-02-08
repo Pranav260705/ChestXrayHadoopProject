@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chest X-Ray AI Diagnosis</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --secondary: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --dark: #1f2937;
+            --light: #f3f4f6;
+            --gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(90deg, #667eea, #764ba2, #f093fb);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: rgba(255,255,255,0.7);
+            font-size: 1.1rem;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 2rem;
+        }
+
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .card-title::before {
+            content: '';
+            width: 4px;
+            height: 24px;
+            background: var(--gradient);
+            border-radius: 2px;
+        }
+
+        /* Upload Zone */
+        .upload-zone {
+            border: 2px dashed rgba(255,255,255,0.3);
+            border-radius: 16px;
+            padding: 3rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 1.5rem;
+        }
+
+        .upload-zone:hover, .upload-zone.dragover {
+            border-color: var(--primary);
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .upload-zone.has-image {
+            padding: 1rem;
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.7;
+        }
+
+        .upload-zone p {
+            color: rgba(255,255,255,0.7);
+            margin-bottom: 0.5rem;
+        }
+
+        #preview-container {
+            display: none;
+            margin-top: 1rem;
+        }
+
+        #preview-image {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 12px;
+            object-fit: contain;
+        }
+
+        /* Form Fields */
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: rgba(255,255,255,0.9);
+        }
+
+        input, select {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 12px;
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3);
+        }
+
+        select option {
+            background: var(--dark);
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .btn-primary {
+            background: var(--gradient);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Results Section */
+        .results-section {
+            display: none;
+        }
+
+        .results-section.show {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Prediction Bars */
+        .prediction-item {
+            margin-bottom: 1rem;
+            padding: 0.75rem 1rem;
+            background: rgba(255,255,255,0.03);
+            border-radius: 12px;
+        }
+
+        .prediction-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+
+        .prediction-label {
+            font-weight: 500;
+        }
+
+        .prediction-value {
+            color: var(--secondary);
+            font-weight: 600;
+        }
+
+        .prediction-bar {
+            height: 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .prediction-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+
+        .prediction-fill.high { background: var(--danger); }
+        .prediction-fill.medium { background: var(--warning); }
+        .prediction-fill.low { background: var(--secondary); }
+
+        /* GRAD-CAM Gallery */
+        .gradcam-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .gradcam-item {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .gradcam-item img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .gradcam-label {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 0.75rem;
+            background: linear-gradient(transparent, rgba(0,0,0,0.8));
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            display: none;
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255,255,255,0.1);
+            border-left-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Error Message */
+        .error-message {
+            display: none;
+            padding: 1rem;
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid var(--danger);
+            border-radius: 12px;
+            color: #fca5a5;
+            margin-bottom: 1rem;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: rgba(255,255,255,0.5);
+            font-size: 0.875rem;
+        }
+
+        /* Images comparison */
+        .images-comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .image-box {
+            position: relative;
+        }
+
+        .image-box img {
+            width: 100%;
+            border-radius: 12px;
+        }
+
+        .image-box-label {
+            position: absolute;
+            top: 0.5rem;
+            left: 0.5rem;
+            padding: 0.25rem 0.75rem;
+            background: rgba(0,0,0,0.7);
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🫁 Chest X-Ray AI Diagnosis</h1>
+            <p class="subtitle">Multimodal Deep Learning with GRAD-CAM Visualization</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Left Panel: Upload Form -->
+            <div class="card">
+                <h2 class="card-title">Upload X-Ray</h2>
+                
+                <form id="upload-form">
+                    <div class="upload-zone" id="drop-zone">
+                        <div class="upload-icon">📤</div>
+                        <p><strong>Drag & Drop</strong> your X-ray image here</p>
+                        <p>or click to browse</p>
+                        <input type="file" id="file-input" name="file" accept="image/png,image/jpeg" hidden>
+                        <div id="preview-container">
+                            <img id="preview-image" alt="Preview">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="age">Patient Age</label>
+                        <input type="number" id="age" name="age" min="0" max="120" value="50" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="gender">Gender</label>
+                        <select id="gender" name="gender" required>
+                            <option value="M">Male</option>
+                            <option value="F">Female</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="view">View Position</label>
+                        <select id="view" name="view" required>
+                            <option value="PA">PA (Posterior-Anterior)</option>
+                            <option value="AP">AP (Anterior-Posterior)</option>
+                        </select>
+                    </div>
+
+                    <div class="error-message" id="error-message"></div>
+
+                    <button type="submit" class="btn btn-primary" id="submit-btn">
+                        <span>🔬 Analyze X-Ray</span>
+                    </button>
+                    
+                    <div class="spinner" id="spinner"></div>
+                </form>
+            </div>
+
+            <!-- Right Panel: Results -->
+            <div class="card results-section" id="results-section">
+                <h2 class="card-title">Diagnosis Results</h2>
+
+                <!-- Images Comparison -->
+                <div class="images-comparison" id="images-comparison">
+                    <div class="image-box">
+                        <span class="image-box-label">Original</span>
+                        <img id="result-original" alt="Original X-Ray">
+                    </div>
+                    <div class="image-box">
+                        <span class="image-box-label">Top Prediction Heatmap</span>
+                        <img id="result-heatmap" alt="GRAD-CAM Heatmap">
+                    </div>
+                </div>
+
+                <!-- Predictions List -->
+                <div class="card-title" style="margin-top: 1.5rem;">Disease Probabilities</div>
+                <div id="predictions-list"></div>
+
+                <!-- GRAD-CAM Gallery -->
+                <div class="card-title" style="margin-top: 1.5rem;">GRAD-CAM Heatmaps</div>
+                <p style="color: rgba(255,255,255,0.6); font-size: 0.875rem; margin-bottom: 1rem;">
+                    Showing model attention regions for top predictions
+                </p>
+                <div class="gradcam-gallery" id="gradcam-gallery"></div>
+            </div>
+        </div>
+
+        <footer>
+            <p>Powered by DenseNet121 | Built with TensorFlow & Apache Spark</p>
+            <p>⚠️ For educational purposes only. Not for clinical diagnosis.</p>
+        </footer>
+    </div>
+
+    <script>
+        // DOM Elements
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const previewContainer = document.getElementById('preview-container');
+        const previewImage = document.getElementById('preview-image');
+        const uploadForm = document.getElementById('upload-form');
+        const submitBtn = document.getElementById('submit-btn');
+        const spinner = document.getElementById('spinner');
+        const errorMessage = document.getElementById('error-message');
+        const resultsSection = document.getElementById('results-section');
+        const predictionsList = document.getElementById('predictions-list');
+        const gradcamGallery = document.getElementById('gradcam-gallery');
+
+        // Drag and Drop handling
+        dropZone.addEventListener('click', () => fileInput.click());
+        
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                showPreview(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                showPreview(e.target.files[0]);
+            }
+        });
+
+        function showPreview(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewImage.src = e.target.result;
+                previewContainer.style.display = 'block';
+                dropZone.classList.add('has-image');
+                dropZone.querySelector('.upload-icon').style.display = 'none';
+                dropZone.querySelectorAll('p').forEach(p => p.style.display = 'none');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Form submission
+        uploadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Reset UI
+            errorMessage.classList.remove('show');
+            resultsSection.classList.remove('show');
+            
+            // Validate file
+            if (!fileInput.files || fileInput.files.length === 0) {
+                showError('Please select an X-ray image');
+                return;
+            }
+
+            // Show loading state
+            submitBtn.disabled = true;
+            spinner.style.display = 'block';
+            submitBtn.querySelector('span').textContent = 'Analyzing...';
+
+            try {
+                const formData = new FormData(uploadForm);
+                
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Prediction failed');
+                }
+
+                displayResults(data);
+
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                submitBtn.disabled = false;
+                spinner.style.display = 'none';
+                submitBtn.querySelector('span').textContent = '🔬 Analyze X-Ray';
+            }
+        });
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.add('show');
+        }
+
+        function displayResults(data) {
+            // Show original and top heatmap
+            document.getElementById('result-original').src = 
+                'data:image/png;base64,' + data.original_image;
+            
+            const topLabel = data.top_predictions[0].label;
+            document.getElementById('result-heatmap').src = 
+                'data:image/png;base64,' + data.gradcam_images[topLabel];
+
+            // Display prediction bars
+            predictionsList.innerHTML = '';
+            data.top_predictions.forEach((pred, index) => {
+                const probability = (pred.probability * 100).toFixed(1);
+                const fillClass = probability >= 50 ? 'high' : 
+                                 probability >= 25 ? 'medium' : 'low';
+                
+                predictionsList.innerHTML += `
+                    <div class="prediction-item">
+                        <div class="prediction-header">
+                            <span class="prediction-label">${index + 1}. ${pred.label}</span>
+                            <span class="prediction-value">${probability}%</span>
+                        </div>
+                        <div class="prediction-bar">
+                            <div class="prediction-fill ${fillClass}" 
+                                 style="width: ${Math.min(probability, 100)}%"></div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            // Display GRAD-CAM gallery
+            gradcamGallery.innerHTML = '';
+            for (const [label, base64Img] of Object.entries(data.gradcam_images)) {
+                const prob = (data.predictions[label] * 100).toFixed(1);
+                gradcamGallery.innerHTML += `
+                    <div class="gradcam-item">
+                        <img src="data:image/png;base64,${base64Img}" alt="${label}">
+                        <div class="gradcam-label">${label}: ${prob}%</div>
+                    </div>
+                `;
+            }
+
+            // Show results section
+            resultsSection.classList.add('show');
+            resultsSection.scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>

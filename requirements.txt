@@ -1,0 +1,27 @@
+# Core dependencies for Chest X-Ray Spark Inference
+# Compatible with Python 3.11
+
+# Spark
+pyspark>=3.2.0,<4.0.0
+
+# TensorFlow 2.15 - uses Keras 2.x with better legacy SavedModel support
+tensorflow>=2.15.0,<2.16.0
+
+# Web framework
+flask>=2.0.0,<4.0.0
+
+# Data processing
+numpy>=1.21.0,<2.0.0
+pandas>=1.3.0,<3.0.0
+
+# Image processing
+opencv-python>=4.5.0,<4.10.0
+Pillow>=8.0.0,<11.0.0
+
+# HDFS/Arrow support
+pyarrow>=10.0.0,<18.0.0
+hdfs>=2.6.0,<3.0.0
+
+# Web server
+werkzeug>=2.0.0,<4.0.0
+gunicorn>=20.0.0,<24.0.0

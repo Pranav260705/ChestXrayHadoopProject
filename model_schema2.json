@@ -1,0 +1,1 @@
+{"labels": ["Cardiomegaly", "Emphysema", "Effusion", "Hernia", "Infiltration", "Mass", "Nodule", "Atelectasis", "Pneumothorax", "Pleural_Thickening", "Pneumonia", "Fibrosis", "Edema", "Consolidation"], "meta_cols": ["age_norm", "sex_bin", "view_AP", "view_PA"]}
