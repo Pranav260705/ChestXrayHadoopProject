@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient History - Chest X-Ray AI</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --secondary: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --dark: #1f2937;
+            --light: #f3f4f6;
+            --gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(90deg, #667eea, #764ba2, #f093fb);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1.1rem;
+        }
+
+        .nav-links {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            color: #fff;
+            background: rgba(102, 126, 234, 0.3);
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .card-title::before {
+            content: '';
+            width: 4px;
+            height: 24px;
+            background: var(--gradient);
+            border-radius: 2px;
+        }
+
+        /* Search Box */
+        .search-box {
+            margin-bottom: 1.5rem;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 1rem 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            font-size: 1rem;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3);
+        }
+
+        .search-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Patient Table */
+        .patient-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .patient-table th,
+        .patient-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .patient-table th {
+            color: rgba(255, 255, 255, 0.7);
+            font-weight: 500;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+        }
+
+        .patient-table tr {
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .patient-table tbody tr:hover {
+            background: rgba(102, 126, 234, 0.2);
+        }
+
+        .patient-name {
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .patient-date {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        /* Patient Detail Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .modal.show {
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border-radius: 20px;
+            padding: 2rem;
+            max-width: 1000px;
+            width: 100%;
+            margin-top: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 1.5rem;
+            cursor: pointer;
+            opacity: 0.7;
+        }
+
+        .modal-close:hover {
+            opacity: 1;
+        }
+
+        .patient-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .info-item {
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+        }
+
+        .info-label {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            margin-bottom: 0.25rem;
+        }
+
+        .info-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        /* Predictions */
+        .prediction-item {
+            margin-bottom: 0.75rem;
+            padding: 0.75rem 1rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+        }
+
+        .prediction-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+
+        .prediction-label {
+            font-weight: 500;
+        }
+
+        .prediction-value {
+            color: var(--secondary);
+            font-weight: 600;
+        }
+
+        .prediction-bar {
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .prediction-fill {
+            height: 100%;
+            border-radius: 3px;
+        }
+
+        .prediction-fill.high {
+            background: var(--danger);
+        }
+
+        .prediction-fill.medium {
+            background: var(--warning);
+        }
+
+        .prediction-fill.low {
+            background: var(--secondary);
+        }
+
+        /* Image Gallery */
+        .image-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .gallery-item {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .gallery-label {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 0.5rem;
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+            font-size: 0.75rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>🫁 Chest X-Ray AI Diagnosis</h1>
+            <p class="subtitle">Patient History & Records</p>
+            <nav class="nav-links">
+                <a href="/" class="nav-link">🔬 New Diagnosis</a>
+                <a href="/search" class="nav-link active">🔍 Patient History</a>
+            </nav>
+        </header>
+
+        <div class="card">
+            <h2 class="card-title">Patient Records</h2>
+
+            <div class="search-box">
+                <input type="text" class="search-input" id="search-input" placeholder="🔍 Search by patient name...">
+            </div>
+
+            <div id="patients-container">
+                <div class="loading">Loading patients...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Patient Detail Modal -->
+    <div class="modal" id="patient-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">Patient Details</h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div id="modal-body">
+                <!-- Filled dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allPatients = [];
+
+        // Load patients on page load
+        async function loadPatients() {
+            try {
+                const response = await fetch('/api/patients');
+                const data = await response.json();
+                allPatients = data.patients || [];
+                renderPatients(allPatients);
+            } catch (error) {
+                document.getElementById('patients-container').innerHTML =
+                    '<div class="empty-state">Error loading patients</div>';
+            }
+        }
+
+        function renderPatients(patients) {
+            const container = document.getElementById('patients-container');
+
+            if (patients.length === 0) {
+                container.innerHTML = '<div class="empty-state">No patient records found</div>';
+                return;
+            }
+
+            let html = `
+                <table class="patient-table">
+                    <thead>
+                        <tr>
+                            <th>Patient Name</th>
+                            <th>Date</th>
+                            <th>Folder</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            for (const patient of patients) {
+                html += `
+                    <tr onclick="showPatient('${patient.folder_name}')">
+                        <td class="patient-name">${patient.patient_name}</td>
+                        <td class="patient-date">${patient.date}</td>
+                        <td>${patient.folder_name}</td>
+                    </tr>
+                `;
+            }
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        // Search functionality
+        document.getElementById('search-input').addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            const filtered = allPatients.filter(p =>
+                p.patient_name.toLowerCase().includes(query)
+            );
+            renderPatients(filtered);
+        });
+
+        // Show patient details
+        async function showPatient(folderName) {
+            const modal = document.getElementById('patient-modal');
+            const modalBody = document.getElementById('modal-body');
+            const modalTitle = document.getElementById('modal-title');
+
+            modalBody.innerHTML = '<div class="loading">Loading patient data...</div>';
+            modal.classList.add('show');
+
+            try {
+                const response = await fetch(`/api/patients/${folderName}`);
+                const data = await response.json();
+
+                modalTitle.textContent = data.metadata?.patient_name || folderName;
+
+                let html = '';
+
+                // Patient Info
+                if (data.metadata) {
+                    html += '<div class="patient-info">';
+                    html += `<div class="info-item"><div class="info-label">Age</div><div class="info-value">${data.metadata.age}</div></div>`;
+                    html += `<div class="info-item"><div class="info-label">Gender</div><div class="info-value">${data.metadata.gender === 'M' ? 'Male' : 'Female'}</div></div>`;
+                    html += `<div class="info-item"><div class="info-label">View</div><div class="info-value">${data.metadata.view}</div></div>`;
+                    html += `<div class="info-item"><div class="info-label">Date</div><div class="info-value">${data.metadata.timestamp?.split('T')[0] || 'N/A'}</div></div>`;
+                    html += '</div>';
+                }
+
+                // Predictions
+                if (data.predictions) {
+                    html += '<h3 style="margin: 1.5rem 0 1rem;">Disease Probabilities</h3>';
+                    const sorted = Object.entries(data.predictions)
+                        .sort((a, b) => b[1] - a[1])
+                        .slice(0, 5);
+
+                    for (const [label, prob] of sorted) {
+                        const percent = (prob * 100).toFixed(1);
+                        const fillClass = percent >= 50 ? 'high' : percent >= 25 ? 'medium' : 'low';
+                        html += `
+                            <div class="prediction-item">
+                                <div class="prediction-header">
+                                    <span class="prediction-label">${label}</span>
+                                    <span class="prediction-value">${percent}%</span>
+                                </div>
+                                <div class="prediction-bar">
+                                    <div class="prediction-fill ${fillClass}" style="width: ${Math.min(percent, 100)}%"></div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+
+                // Images
+                if (data.images && data.images.length > 0) {
+                    html += '<h3 style="margin: 1.5rem 0 1rem;">Images</h3>';
+                    html += '<div class="image-gallery">';
+                    for (const img of data.images) {
+                        const label = img.type === 'original' ? 'Original X-Ray' : img.filename.replace('gradcam_', '').replace('.png', '');
+                        html += `
+                            <div class="gallery-item">
+                                <img src="/images/${folderName}/${img.filename}" alt="${label}">
+                                <div class="gallery-label">${label}</div>
+                            </div>
+                        `;
+                    }
+                    html += '</div>';
+                }
+
+                modalBody.innerHTML = html;
+
+            } catch (error) {
+                modalBody.innerHTML = '<div class="empty-state">Error loading patient data</div>';
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('patient-modal').classList.remove('show');
+        }
+
+        // Close modal on outside click
+        document.getElementById('patient-modal').addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal')) {
+                closeModal();
+            }
+        });
+
+        // Load patients on page load
+        loadPatients();
+    </script>
+</body>
+
+</html>

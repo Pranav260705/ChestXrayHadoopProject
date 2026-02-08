@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -49,8 +50,31 @@
         }
 
         .subtitle {
-            color: rgba(255,255,255,0.7);
+            color: rgba(255, 255, 255, 0.7);
             font-size: 1.1rem;
+        }
+
+        .nav-links {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            color: #fff;
+            background: rgba(102, 126, 234, 0.3);
         }
 
         .main-content {
@@ -66,12 +90,12 @@
         }
 
         .card {
-            background: rgba(255,255,255,0.05);
+            background: rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(10px);
             border-radius: 20px;
             padding: 2rem;
-            border: 1px solid rgba(255,255,255,0.1);
-            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         }
 
         .card-title {
@@ -92,7 +116,7 @@
 
         /* Upload Zone */
         .upload-zone {
-            border: 2px dashed rgba(255,255,255,0.3);
+            border: 2px dashed rgba(255, 255, 255, 0.3);
             border-radius: 16px;
             padding: 3rem 2rem;
             text-align: center;
@@ -101,7 +125,8 @@
             margin-bottom: 1.5rem;
         }
 
-        .upload-zone:hover, .upload-zone.dragover {
+        .upload-zone:hover,
+        .upload-zone.dragover {
             border-color: var(--primary);
             background: rgba(102, 126, 234, 0.1);
         }
@@ -117,7 +142,7 @@
         }
 
         .upload-zone p {
-            color: rgba(255,255,255,0.7);
+            color: rgba(255, 255, 255, 0.7);
             margin-bottom: 0.5rem;
         }
 
@@ -142,21 +167,23 @@
             display: block;
             margin-bottom: 0.5rem;
             font-weight: 500;
-            color: rgba(255,255,255,0.9);
+            color: rgba(255, 255, 255, 0.9);
         }
 
-        input, select {
+        input,
+        select {
             width: 100%;
             padding: 0.875rem 1rem;
-            border: 1px solid rgba(255,255,255,0.2);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 12px;
-            background: rgba(255,255,255,0.05);
+            background: rgba(255, 255, 255, 0.05);
             color: #fff;
             font-size: 1rem;
             transition: all 0.3s ease;
         }
 
-        input:focus, select:focus {
+        input:focus,
+        select:focus {
             outline: none;
             border-color: var(--primary);
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3);
@@ -209,15 +236,22 @@
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         /* Prediction Bars */
         .prediction-item {
             margin-bottom: 1rem;
             padding: 0.75rem 1rem;
-            background: rgba(255,255,255,0.03);
+            background: rgba(255, 255, 255, 0.03);
             border-radius: 12px;
         }
 
@@ -238,7 +272,7 @@
 
         .prediction-bar {
             height: 8px;
-            background: rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.1);
             border-radius: 4px;
             overflow: hidden;
         }
@@ -249,9 +283,17 @@
             transition: width 0.5s ease;
         }
 
-        .prediction-fill.high { background: var(--danger); }
-        .prediction-fill.medium { background: var(--warning); }
-        .prediction-fill.low { background: var(--secondary); }
+        .prediction-fill.high {
+            background: var(--danger);
+        }
+
+        .prediction-fill.medium {
+            background: var(--warning);
+        }
+
+        .prediction-fill.low {
+            background: var(--secondary);
+        }
 
         /* GRAD-CAM Gallery */
         .gradcam-gallery {
@@ -279,7 +321,7 @@
             left: 0;
             right: 0;
             padding: 0.75rem;
-            background: linear-gradient(transparent, rgba(0,0,0,0.8));
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
             font-size: 0.875rem;
             font-weight: 500;
         }
@@ -289,7 +331,7 @@
             display: none;
             width: 40px;
             height: 40px;
-            border: 4px solid rgba(255,255,255,0.1);
+            border: 4px solid rgba(255, 255, 255, 0.1);
             border-left-color: var(--primary);
             border-radius: 50%;
             animation: spin 1s linear infinite;
@@ -297,7 +339,9 @@
         }
 
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         /* Error Message */
@@ -319,7 +363,7 @@
         footer {
             text-align: center;
             padding: 2rem;
-            color: rgba(255,255,255,0.5);
+            color: rgba(255, 255, 255, 0.5);
             font-size: 0.875rem;
         }
 
@@ -345,25 +389,30 @@
             top: 0.5rem;
             left: 0.5rem;
             padding: 0.25rem 0.75rem;
-            background: rgba(0,0,0,0.7);
+            background: rgba(0, 0, 0, 0.7);
             border-radius: 6px;
             font-size: 0.75rem;
             font-weight: 500;
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <header>
             <h1>🫁 Chest X-Ray AI Diagnosis</h1>
             <p class="subtitle">Multimodal Deep Learning with GRAD-CAM Visualization</p>
+            <nav class="nav-links">
+                <a href="/" class="nav-link active">🔬 New Diagnosis</a>
+                <a href="/search" class="nav-link">🔍 Patient History</a>
+            </nav>
         </header>
 
         <div class="main-content">
             <!-- Left Panel: Upload Form -->
             <div class="card">
                 <h2 class="card-title">Upload X-Ray</h2>
-                
+
                 <form id="upload-form">
                     <div class="upload-zone" id="drop-zone">
                         <div class="upload-icon">📤</div>
@@ -373,6 +422,11 @@
                         <div id="preview-container">
                             <img id="preview-image" alt="Preview">
                         </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="patient_name">Patient Name *</label>
+                        <input type="text" id="patient_name" name="patient_name" placeholder="e.g. John Doe" required>
                     </div>
 
                     <div class="form-group">
@@ -401,7 +455,7 @@
                     <button type="submit" class="btn btn-primary" id="submit-btn">
                         <span>🔬 Analyze X-Ray</span>
                     </button>
-                    
+
                     <div class="spinner" id="spinner"></div>
                 </form>
             </div>
@@ -457,7 +511,7 @@
 
         // Drag and Drop handling
         dropZone.addEventListener('click', () => fileInput.click());
-        
+
         dropZone.addEventListener('dragover', (e) => {
             e.preventDefault();
             dropZone.classList.add('dragover');
@@ -498,11 +552,11 @@
         // Form submission
         uploadForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
+
             // Reset UI
             errorMessage.classList.remove('show');
             resultsSection.classList.remove('show');
-            
+
             // Validate file
             if (!fileInput.files || fileInput.files.length === 0) {
                 showError('Please select an X-ray image');
@@ -516,7 +570,7 @@
 
             try {
                 const formData = new FormData(uploadForm);
-                
+
                 const response = await fetch('/predict', {
                     method: 'POST',
                     body: formData
@@ -546,20 +600,20 @@
 
         function displayResults(data) {
             // Show original and top heatmap
-            document.getElementById('result-original').src = 
+            document.getElementById('result-original').src =
                 'data:image/png;base64,' + data.original_image;
-            
+
             const topLabel = data.top_predictions[0].label;
-            document.getElementById('result-heatmap').src = 
+            document.getElementById('result-heatmap').src =
                 'data:image/png;base64,' + data.gradcam_images[topLabel];
 
             // Display prediction bars
             predictionsList.innerHTML = '';
             data.top_predictions.forEach((pred, index) => {
                 const probability = (pred.probability * 100).toFixed(1);
-                const fillClass = probability >= 50 ? 'high' : 
-                                 probability >= 25 ? 'medium' : 'low';
-                
+                const fillClass = probability >= 50 ? 'high' :
+                    probability >= 25 ? 'medium' : 'low';
+
                 predictionsList.innerHTML += `
                     <div class="prediction-item">
                         <div class="prediction-header">
@@ -592,4 +646,5 @@
         }
     </script>
 </body>
+
 </html>

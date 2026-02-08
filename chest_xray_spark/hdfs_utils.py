@@ -185,17 +185,21 @@ def read_bytes_from_hdfs(hdfs_path: str) -> bytes:
         hdfs_path: Source path
         
     Returns:
-        File contents as bytes
+        File contents as bytes, or None if failed
     """
     if not hdfs_available():
         # Local filesystem
         local_path = get_local_path(hdfs_path)
-        with open(local_path, 'rb') as f:
-            return f.read()
+        try:
+            with open(local_path, 'rb') as f:
+                return f.read()
+        except Exception as e:
+            logger.error(f"Failed to read local file {local_path}: {e}")
+            return None
     
-    # HDFS - read via cat to temp file
-    with tempfile.NamedTemporaryFile(delete=False) as tmp:
-        tmp_path = tmp.name
+    # HDFS - read via get to temp file
+    # Create temp file path but don't create the file (HDFS -get needs target to not exist)
+    tmp_path = tempfile.mktemp(suffix='.tmp')
     
     try:
         success, output = run_hdfs_cmd(["-get", hdfs_path, tmp_path])
@@ -203,7 +207,11 @@ def read_bytes_from_hdfs(hdfs_path: str) -> bytes:
             with open(tmp_path, 'rb') as f:
                 return f.read()
         else:
-            raise IOError(f"Failed to read from HDFS: {output}")
+            logger.error(f"Failed to read from HDFS {hdfs_path}: {output}")
+            return None
+    except Exception as e:
+        logger.error(f"Exception reading from HDFS {hdfs_path}: {e}")
+        return None
     finally:
         if os.path.exists(tmp_path):
             os.unlink(tmp_path)
@@ -217,9 +225,11 @@ def read_json_from_hdfs(hdfs_path: str) -> dict:
         hdfs_path: Source HDFS path
         
     Returns:
-        Parsed JSON as dictionary
+        Parsed JSON as dictionary, or None if failed
     """
     data = read_bytes_from_hdfs(hdfs_path)
+    if data is None:
+        return None
     return json.loads(data.decode('utf-8'))
 
 
@@ -258,19 +268,18 @@ def list_directory(hdfs_path: str) -> list:
     return files
 
 
-def create_result_directory(patient_id: str, timestamp: str) -> str:
+def create_result_directory(folder_name: str) -> str:
     """
-    Create a result directory for a patient.
+    Create a result directory for a patient in ChestXRayDB.
     
     Args:
-        patient_id: Patient identifier
-        timestamp: Timestamp string
+        folder_name: Folder name in format PatientNameDate (e.g., JohnDoe20260209)
         
     Returns:
         Path to the created directory
     """
-    dir_name = f"{patient_id}_{timestamp}"
-    dir_path = f"{HDFS_RESULTS_PATH}/{dir_name}"
+    # Base path is /ChestXRayDB/
+    dir_path = f"/ChestXRayDB/{folder_name}"
     
     ensure_directory(dir_path)
     
@@ -278,19 +287,17 @@ def create_result_directory(patient_id: str, timestamp: str) -> str:
 
 
 def save_inference_results(
-    patient_id: str,
-    timestamp: str,
+    folder_name: str,
     original_image: bytes,
     predictions: dict,
     metadata: dict,
     gradcam_images: dict = None
 ) -> str:
     """
-    Save complete inference results to HDFS.
+    Save complete inference results to HDFS in ChestXRayDB.
     
     Args:
-        patient_id: Patient identifier
-        timestamp: Timestamp string
+        folder_name: Folder name (PatientNameDate format)
         original_image: Original uploaded image bytes
         predictions: Prediction probabilities
         metadata: Patient metadata
@@ -302,8 +309,8 @@ def save_inference_results(
     import numpy as np
     from PIL import Image
     
-    # Create result directory
-    result_dir = create_result_directory(patient_id, timestamp)
+    # Create result directory in /ChestXRayDB/
+    result_dir = create_result_directory(folder_name)
     
     # Save original image
     save_image_to_hdfs(original_image, f"{result_dir}/original.png")
@@ -359,3 +366,96 @@ def get_result_files(result_dir: str) -> dict:
             result['files'][fname] = file_path
     
     return result
+
+
+def list_all_patients() -> list:
+    """
+    List all patient folders in ChestXRayDB.
+    
+    Returns:
+        List of dicts with folder_name, patient_name, date, sorted by date (newest first)
+    """
+    import re
+    
+    base_path = "/ChestXRayDB"
+    folders = list_directory(base_path)
+    
+    patients = []
+    for folder in folders:
+        # Parse folder name: PatientNameYYYYMMDD
+        # Match letters followed by 8 digits
+        match = re.match(r'^([A-Za-z]+)(\d{8})$', folder)
+        if match:
+            name_part = match.group(1)
+            date_part = match.group(2)
+            # Format date for display: YYYY-MM-DD
+            date_formatted = f"{date_part[:4]}-{date_part[4:6]}-{date_part[6:8]}"
+            
+            patients.append({
+                'folder_name': folder,
+                'patient_name': name_part,
+                'date': date_formatted,
+                'date_raw': date_part
+            })
+        else:
+            # Fallback for other folder formats
+            patients.append({
+                'folder_name': folder,
+                'patient_name': folder,
+                'date': 'Unknown',
+                'date_raw': '00000000'
+            })
+    
+    # Sort by date (newest first)
+    patients.sort(key=lambda x: x['date_raw'], reverse=True)
+    
+    return patients
+
+
+def get_patient_data(folder_name: str) -> dict:
+    """
+    Get complete data for a patient folder.
+    
+    Args:
+        folder_name: The folder name (e.g., JohnDoe20260209)
+        
+    Returns:
+        Dict with metadata, predictions, and image paths
+    """
+    result_dir = f"/ChestXRayDB/{folder_name}"
+    
+    data = {
+        'folder_name': folder_name,
+        'result_dir': result_dir,
+        'metadata': None,
+        'predictions': None,
+        'images': []
+    }
+    
+    # List all files in directory
+    try:
+        files = list_directory(result_dir)
+    except Exception:
+        return data
+    
+    for fname in files:
+        file_path = f"{result_dir}/{fname}"
+        
+        if fname == 'metadata.json':
+            try:
+                data['metadata'] = read_json_from_hdfs(file_path)
+            except Exception:
+                pass
+        elif fname == 'predictions.json':
+            try:
+                data['predictions'] = read_json_from_hdfs(file_path)
+            except Exception:
+                pass
+        elif fname.endswith('.png'):
+            data['images'].append({
+                'filename': fname,
+                'path': file_path,
+                'type': 'original' if fname == 'original.png' else 'gradcam'
+            })
+    
+    return data

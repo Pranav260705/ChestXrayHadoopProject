@@ -53,7 +53,12 @@ from chest_xray_spark.gradcam import (
     overlay_gradcam,
     generate_all_heatmaps
 )
-from chest_xray_spark.hdfs_utils import save_inference_results
+from chest_xray_spark.hdfs_utils import (
+    save_inference_results,
+    list_all_patients,
+    get_patient_data,
+    read_bytes_from_hdfs
+)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -136,6 +141,10 @@ def predict():
             return jsonify({'error': 'Invalid file type. Please upload PNG or JPEG.'}), 400
         
         # Get metadata
+        patient_name = request.form.get('patient_name', '').strip()
+        if not patient_name:
+            return jsonify({'error': 'Patient name is required'}), 400
+        
         try:
             age = int(request.form.get('age', 50))
         except ValueError:
@@ -143,6 +152,12 @@ def predict():
             
         gender = request.form.get('gender', 'M').upper()
         view = request.form.get('view', 'PA').upper()
+        
+        # Sanitize patient name for folder (remove spaces and special chars)
+        import re
+        sanitized_name = re.sub(r'[^a-zA-Z]', '', patient_name).title()
+        if not sanitized_name:
+            sanitized_name = "Unknown"
         
         # Read image bytes
         image_bytes = file.read()
@@ -166,14 +181,17 @@ def predict():
         original_image = get_original_image_array(image_bytes)
         
         # Save results to HDFS/local
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        patient_id = f"web_{timestamp}"
+        # Folder format: PatientName + YYYYMMDD (e.g., JohnDoe20260209)
+        date_str = datetime.now().strftime("%Y%m%d")
+        folder_name = f"{sanitized_name}{date_str}"
         
         metadata = {
+            'patient_name': patient_name,
             'age': age,
             'gender': gender,
             'view': view,
-            'timestamp': timestamp,
+            'timestamp': datetime.now().isoformat(),
+            'folder_name': folder_name,
             'source': 'web_upload'
         }
         
@@ -188,8 +206,7 @@ def predict():
                 gradcam_arrays[label] = overlay
             
             result_dir = save_inference_results(
-                patient_id=patient_id,
-                timestamp=timestamp,
+                folder_name=folder_name,
                 original_image=image_bytes,
                 predictions=predictions,
                 metadata=metadata,
@@ -214,7 +231,7 @@ def predict():
             'gradcam_images': gradcam_images,
             'original_image': image_to_base64(original_image),
             'metadata': metadata,
-            'patient_id': patient_id,
+            'folder_name': folder_name,
             'result_dir': result_dir
         }
         
@@ -240,6 +257,52 @@ def model_info():
 def get_labels():
     """Return list of disease labels."""
     return jsonify({'labels': LABELS})
+
+
+@app.route('/search')
+def search_page():
+    """Render the patient search page."""
+    return render_template('search.html')
+
+
+@app.route('/api/patients')
+def api_list_patients():
+    """API endpoint to list all patients."""
+    try:
+        patients = list_all_patients()
+        return jsonify({'patients': patients})
+    except Exception as e:
+        logger.error(f"Error listing patients: {e}")
+        return jsonify({'patients': [], 'error': str(e)})
+
+
+@app.route('/api/patients/<folder_name>')
+def api_get_patient(folder_name):
+    """API endpoint to get patient details."""
+    try:
+        data = get_patient_data(folder_name)
+        return jsonify(data)
+    except Exception as e:
+        logger.error(f"Error getting patient data: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/images/<folder_name>/<filename>')
+def serve_image(folder_name, filename):
+    """Serve images from HDFS/local storage."""
+    try:
+        hdfs_path = f"/ChestXRayDB/{folder_name}/{filename}"
+        image_bytes = read_bytes_from_hdfs(hdfs_path)
+        if image_bytes:
+            return send_file(
+                io.BytesIO(image_bytes),
+                mimetype='image/png'
+            )
+        else:
+            return 'Image not found', 404
+    except Exception as e:
+        logger.error(f"Error serving image: {e}")
+        return 'Error loading image', 500
 
 
 @app.route('/health')
